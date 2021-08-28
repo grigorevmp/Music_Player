@@ -22,11 +22,14 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".NotificationActionService" />
+        <receiver android:name=".NotificationActionService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
         <service
-            android:name=".OnClearFromRecentService"
-            android:enabled="true"
-            android:exported="false" />
+            android:name=".OnClearFromRecentService"/>
 
     </application>
 

@@ -50,8 +50,7 @@ class MusicNotification {
                     val intentNext = Intent(
                         context,
                         NotificationActionService::class.java
-                    )
-                        .setAction(ACTION_NEXT)
+                    ).setAction(ACTION_NEXT)
                     pendingIntentNext = PendingIntent.getBroadcast(
                         context,
                         0,
@@ -66,8 +65,7 @@ class MusicNotification {
                     val intentPrevious = Intent(
                         context,
                         NotificationActionService::class.java
-                    )
-                        .setAction(ACTION_PREVIOUS)
+                    ).setAction(ACTION_PREVIOUS)
                     pendingIntentPrevious = PendingIntent.getBroadcast(
                         context,
                         0,
@@ -80,20 +78,22 @@ class MusicNotification {
                     val intentPrevious = Intent(
                         context,
                         NotificationActionService::class.java
-                    )
-                        .setAction(ACTION_PREVIOUS)
+                    ).setAction(ACTION_PREVIOUS)
+
                     pendingIntentPrevious = PendingIntent.getBroadcast(
                         context,
                         0,
                         intentPrevious,
                         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                     )
+
                     iconPrevious = R.drawable.ic_skip_prev
+
                     val intentNext = Intent(
                         context,
                         NotificationActionService::class.java
-                    )
-                        .setAction(ACTION_NEXT)
+                    ).setAction(ACTION_NEXT)
+
                     pendingIntentNext = PendingIntent.getBroadcast(
                         context,
                         0,
