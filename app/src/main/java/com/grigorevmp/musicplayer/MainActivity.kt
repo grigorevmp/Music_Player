@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.AssetFileDescriptor
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
@@ -15,13 +16,20 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 
 class MainActivity : AppCompatActivity(), Playable {
-    lateinit var controlMusic: FloatingActionButton
+    private lateinit var controlMusic: FloatingActionButton
 
-    lateinit var mediaPlayer: MediaPlayer
+    var mediaPlayer: MediaPlayer = MediaPlayer()
 
     lateinit var notificationManager: NotificationManager
 
     private val songs: MutableList<Song> = arrayListOf()
+
+    private val songsNames: MutableList<String> = arrayListOf(
+        "songs/song_1.mp3",
+        "songs/song_2.mp3",
+        "songs/song_3.mp3",
+        "songs/song_4.mp3"
+    )
 
     private var position = 0
     private var isPlaying = false
@@ -32,6 +40,19 @@ class MainActivity : AppCompatActivity(), Playable {
         setContentView(R.layout.activity_main)
 
         controlMusic = findViewById(R.id.control_music)
+
+
+        val descriptor: AssetFileDescriptor = this.assets.openFd(songsNames[0])
+        mediaPlayer.setDataSource(
+            descriptor.fileDescriptor,
+            descriptor.startOffset,
+            descriptor.length
+        )
+        descriptor.close()
+
+        mediaPlayer.prepare()
+        mediaPlayer.setVolume(1f, 1f)
+        mediaPlayer.isLooping = false
 
         loadSongs()
         createChannel()
@@ -59,8 +80,6 @@ class MainActivity : AppCompatActivity(), Playable {
             notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
 
-        } else {
-            TODO("VERSION.SDK_INT < O")
         }
     }
 
@@ -121,6 +140,7 @@ class MainActivity : AppCompatActivity(), Playable {
         )
         isPlaying = true
         controlMusic.setImageResource(R.drawable.ic_pause)
+        mediaPlayer.start()
     }
 
     override fun onTrackPause() {
@@ -133,6 +153,7 @@ class MainActivity : AppCompatActivity(), Playable {
         )
         isPlaying = false
         controlMusic.setImageResource(R.drawable.ic_play)
+        mediaPlayer.pause()
     }
 
     override fun onTrackNext() {
