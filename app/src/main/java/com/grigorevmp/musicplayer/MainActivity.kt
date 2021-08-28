@@ -41,22 +41,11 @@ class MainActivity : AppCompatActivity(), Playable {
 
         controlMusic = findViewById(R.id.control_music)
 
-
-        val descriptor: AssetFileDescriptor = this.assets.openFd(songsNames[0])
-        mediaPlayer.setDataSource(
-            descriptor.fileDescriptor,
-            descriptor.startOffset,
-            descriptor.length
-        )
-        descriptor.close()
-
-        mediaPlayer.prepare()
-        mediaPlayer.setVolume(1f, 1f)
-        mediaPlayer.isLooping = false
+        playSong(position)
 
         loadSongs()
         createChannel()
-        registerReceiver(broadCastReceiver, IntentFilter("SONGS"))
+        registerReceiver(broadCastReceiver, IntentFilter("Songs"))
         startService(Intent(baseContext, OnClearFromRecentService::class.java))
 
         controlMusic.setOnClickListener {
@@ -83,6 +72,20 @@ class MainActivity : AppCompatActivity(), Playable {
         }
     }
 
+    private fun playSong(position: Int){
+        val descriptor: AssetFileDescriptor = this.assets.openFd(songsNames[position])
+        mediaPlayer.setDataSource(
+            descriptor.fileDescriptor,
+            descriptor.startOffset,
+            descriptor.length
+        )
+        descriptor.close()
+
+        mediaPlayer.prepare()
+        mediaPlayer.setVolume(1f, 1f)
+        mediaPlayer.isLooping = false
+    }
+
     private fun loadSongs() {
         songs.add(Song("Song 1", "Artist 1", R.drawable.cover_1))
         songs.add(Song("Song 2", "Artist 2", R.drawable.cover_2))
@@ -95,16 +98,11 @@ class MainActivity : AppCompatActivity(), Playable {
         Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
     }
 
-    open class MusicBroadcastReceiver(function: () -> Unit) : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val action = intent.extras!!.getString("actionname")
-
-        }
-    }
 
     private val broadCastReceiver = object : BroadcastReceiver() {
         override fun onReceive(contxt: Context?, intent: Intent?) {
-            when (intent?.action) {
+            val action = intent?.extras?.getString("actionname")
+            when (action) {
                 MusicNotification.ACTION_PREVIOUS -> onTrackPrevious()
                 MusicNotification.ACTION_PLAY -> {
                     if (isPlaying)
@@ -128,6 +126,10 @@ class MainActivity : AppCompatActivity(), Playable {
             0,
             songs.size - 1
         )
+        mediaPlayer.stop()
+        mediaPlayer.reset()
+        playSong(position)
+        mediaPlayer.start()
     }
 
     override fun onTrackPlay() {
@@ -147,7 +149,7 @@ class MainActivity : AppCompatActivity(), Playable {
         MusicNotification.createNotification(
             this,
             songs[position],
-            R.drawable.ic_pause,
+            R.drawable.ic_play,
             0,
             songs.size - 1
         )
@@ -165,6 +167,10 @@ class MainActivity : AppCompatActivity(), Playable {
             0,
             songs.size - 1
         )
+        mediaPlayer.stop()
+        mediaPlayer.reset()
+        playSong(position)
+        mediaPlayer.start()
     }
 
     override fun onTrackRepeat() {
