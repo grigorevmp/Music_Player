@@ -1,7 +1,8 @@
-package com.grigorevmp.musicplayer
+package com.grigorevmp.musicplayer.model
 
-data class Song (
+data class SongInfo (
     val title: String,
     val artist: String,
     val image: Int
 )
+

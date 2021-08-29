@@ -1,4 +1,4 @@
-package com.grigorevmp.musicplayer
+package com.grigorevmp.musicplayer.view
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -6,38 +6,39 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.AssetFileDescriptor
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.grigorevmp.musicplayer.MusicNotification
+import com.grigorevmp.musicplayer.service.OnClearFromRecentService
+import com.grigorevmp.musicplayer.Playable
+import com.grigorevmp.musicplayer.R
+import com.grigorevmp.musicplayer.model.SongInfo
+import com.grigorevmp.musicplayer.model.SongInfoModel
+import com.grigorevmp.musicplayer.model.SongNames
+import com.grigorevmp.musicplayer.viewModel.MediaViewModel
 import kotlin.random.Random
-import android.support.v4.media.MediaMetadataCompat
-
-
-
 
 
 class MainActivity : AppCompatActivity(), Playable {
     private lateinit var controlMusic: FloatingActionButton
 
-    var mediaPlayer: MediaPlayer = MediaPlayer()
+    private var mediaPlayer: MediaPlayer = MediaPlayer()
 
-    lateinit var notificationManager: NotificationManager
+    private lateinit var notificationManager: NotificationManager
 
-    private val songs: MutableList<Song> = arrayListOf()
-
-    private val songsNames: MutableList<String> = arrayListOf(
-        "songs/song_1.mp3",
-        "songs/song_2.mp3",
-        "songs/song_3.mp3",
-        "songs/song_4.mp3"
-    )
+    private val songs: MutableList<SongInfo> = SongInfoModel().loadSongs()
 
     private var position = 0
+    private val songsNames: MutableList<String> = SongNames.data
+    private val maxPosition = songsNames.size - 1
+
+    private var mediaViewModel = MediaViewModel()
+
     private var isPlaying = false
+    private var isLooping = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,12 +47,21 @@ class MainActivity : AppCompatActivity(), Playable {
 
         controlMusic = findViewById(R.id.control_music)
 
-        playSong(position)
+        initMediaPlayer(position)
 
-        loadSongs()
         createChannel()
-        registerReceiver(broadCastReceiver, IntentFilter("Songs"))
-        startService(Intent(baseContext, OnClearFromRecentService::class.java))
+        registerReceiver(
+            broadCastReceiver,
+            IntentFilter(
+                "Songs action"
+            )
+        )
+        startService(
+            Intent(
+                baseContext,
+                OnClearFromRecentService::class.java
+            )
+        )
 
         controlMusic.setOnClickListener {
             if (isPlaying) {
@@ -62,14 +72,8 @@ class MainActivity : AppCompatActivity(), Playable {
         }
 
         mediaPlayer.setOnCompletionListener {
-            if (position == songsNames.size - 1) {
-                position = 0
-                onTrackChange()
-            }
-            else if (position < songsNames.size - 1) {
-                position += 1
-                onTrackChange()
-            }
+            position = (position + 1) % maxPosition
+            onTrackChange()
         }
     }
 
@@ -87,34 +91,28 @@ class MainActivity : AppCompatActivity(), Playable {
         }
     }
 
-    private fun playSong(position: Int, change: Boolean = false){
+    private fun initMediaPlayer(position: Int, change: Boolean = false){
         if(change){
             mediaPlayer.stop()
             mediaPlayer.reset()
         }
 
-        val descriptor: AssetFileDescriptor = this.assets.openFd(songsNames[position])
+        val song = mediaViewModel.getSongByPosition(position)
         mediaPlayer.setDataSource(
-            descriptor.fileDescriptor,
-            descriptor.startOffset,
-            descriptor.length
+            song.songDescriptor.fileDescriptor,
+            song.songDescriptor.startOffset,
+            song.songDescriptor.length
         )
-        descriptor.close()
+        song.songDescriptor.close()
 
         mediaPlayer.prepare()
         mediaPlayer.setVolume(1f, 1f)
-        mediaPlayer.isLooping = false
+        mediaPlayer.isLooping = isLooping
     }
 
     private fun changeSongLooping(){
-        mediaPlayer.isLooping = !mediaPlayer.isLooping
-    }
-
-    private fun loadSongs() {
-        songs.add(Song("Song 1", "Artist 1", R.drawable.cover_1))
-        songs.add(Song("Song 2", "Artist 2", R.drawable.cover_2))
-        songs.add(Song("Song 3", "Artist 3", R.drawable.cover_3))
-        songs.add(Song("Song 4", "Artist 4", R.drawable.cover_4))
+        isLooping = !mediaPlayer.isLooping
+        mediaPlayer.isLooping = isLooping
     }
 
     private val broadCastReceiver = object : BroadcastReceiver() {
@@ -136,17 +134,11 @@ class MainActivity : AppCompatActivity(), Playable {
 
     override fun onTrackPrevious() {
         position -= 1
-        playSong(position, change = true)
+        initMediaPlayer(position, change = true)
         mediaPlayer.start()
 
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
+
     }
 
     override fun onTrackPlay() {
@@ -154,28 +146,14 @@ class MainActivity : AppCompatActivity(), Playable {
         controlMusic.setImageResource(R.drawable.ic_pause)
         mediaPlayer.start()
 
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
     }
 
     override fun onTrackChange() {
-        playSong(position, change = true)
+        initMediaPlayer(position, change = true)
         mediaPlayer.start()
 
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
     }
 
 
@@ -184,58 +162,30 @@ class MainActivity : AppCompatActivity(), Playable {
         controlMusic.setImageResource(R.drawable.ic_play)
         mediaPlayer.pause()
 
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_play,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, true, looping = isLooping)
     }
 
     override fun onTrackRandom() {
-        playSong(position, change = true)
+        initMediaPlayer(position, change = true)
         mediaPlayer.start()
 
         val randomPosition = Random.nextInt(songs.size - 1)
         position = randomPosition
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
     }
 
     override fun onTrackNext() {
-        playSong(position, change = true)
+        position += 1
+        initMediaPlayer(position, change = true)
         mediaPlayer.start()
 
-        position += 1
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
     }
 
     override fun onTrackRepeat() {
         changeSongLooping()
-        MusicNotification.createNotification(
-            this,
-            songs[position],
-            R.drawable.ic_pause,
-            position,
-            songs.size - 1,
-            mediaPlayer.duration,
-            looping = mediaPlayer.isLooping
-        )
+        mediaViewModel.createMusicNotification(position, maxPosition, looping = isLooping)
     }
 
     override fun onDestroy() {

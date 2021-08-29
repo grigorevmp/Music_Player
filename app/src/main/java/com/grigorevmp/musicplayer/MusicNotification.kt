@@ -5,14 +5,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.media.session.MediaSession
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import android.support.v4.media.session.PlaybackStateCompat
-
-
+import com.grigorevmp.musicplayer.model.SongInfo
+import com.grigorevmp.musicplayer.service.NotificationActionService
 
 
 class MusicNotification {
@@ -28,20 +27,32 @@ class MusicNotification {
 
         lateinit var notification: Notification
 
+        private fun createPendingIntent(context: Context, action: String): PendingIntent? {
+            val intent = Intent(
+                context,
+                NotificationActionService::class.java
+            ).setAction(action)
+            return PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
         fun createNotification(
             context: Context,
-            song: Song,
+            song: SongInfo,
             play_button: Int,
             pos: Int,
             size: Int,
-            songDuration: Int,
+            songDuration: Int = 0,
             looping: Boolean = false
         ) {
             val notificationManagerCompat = NotificationManagerCompat.from(context)
 
-
             val builder = MediaMetadataCompat.Builder()
-            builder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, songDuration.toLong())
+            // builder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, songDuration.toLong())
 
 
             val playbackStateCompat = PlaybackStateCompat.Builder()
@@ -61,118 +72,41 @@ class MusicNotification {
 
 
             val icon = BitmapFactory.decodeResource(context.resources, song.image)
-            val pendingIntentPrevious: PendingIntent?
-            val pendingIntentNext: PendingIntent?
-            val iconPrevious: Int
-            val iconNext: Int
 
-            when (pos) {
-                0 -> {
-                    pendingIntentPrevious = null
-                    iconPrevious = 0
-                    val intentNext = Intent(
-                        context,
-                        NotificationActionService::class.java
-                    ).setAction(ACTION_NEXT)
-                    pendingIntentNext = PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intentNext,
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                    )
-                    iconNext = R.drawable.ic_skip_next
-                }
-                size -> {
-                    iconNext = 0
-                    pendingIntentNext = null
-                    val intentPrevious = Intent(
-                        context,
-                        NotificationActionService::class.java
-                    ).setAction(ACTION_PREVIOUS)
-                    pendingIntentPrevious = PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intentPrevious,
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                    )
-                    iconPrevious = R.drawable.ic_skip_prev
-                }
-                else -> {
-                    val intentPrevious = Intent(
-                        context,
-                        NotificationActionService::class.java
-                    ).setAction(ACTION_PREVIOUS)
+            var pendingIntentPrevious: PendingIntent? = null
+            var pendingIntentNext: PendingIntent? = null
 
-                    pendingIntentPrevious = PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intentPrevious,
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                    )
+            val pendingIntentPlay = createPendingIntent(context, ACTION_PLAY)
+            val pendingIntentRepeat = createPendingIntent(context, ACTION_REPEAT)
+            val pendingIntentRandom = createPendingIntent(context, ACTION_RANDOM)
 
-                    iconPrevious = R.drawable.ic_skip_prev
+            var iconPrevious = 0
+            var iconNext = 0
 
-                    val intentNext = Intent(
-                        context,
-                        NotificationActionService::class.java
-                    ).setAction(ACTION_NEXT)
+            val iconRandom = R.drawable.ic_random
 
-                    pendingIntentNext = PendingIntent.getBroadcast(
-                        context,
-                        0,
-                        intentNext,
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                    )
-                    iconNext = R.drawable.ic_skip_next
-                }
-            }
-
-            val intentPlay = Intent(
-                context,
-                NotificationActionService::class.java
-            )
-                .setAction(ACTION_PLAY)
-            val pendingIntentPlay = PendingIntent.getBroadcast(
-                context,
-                0,
-                intentPlay,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            val intentRepeat = Intent(
-                context,
-                NotificationActionService::class.java
-            )
-                .setAction(ACTION_REPEAT)
-            val pendingIntentRepeat = PendingIntent.getBroadcast(
-                context,
-                0,
-                intentRepeat,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            val iconRepeat: Int = if (looping)
+            val iconRepeat = if (looping)
                 R.drawable.ic_repeat_one
             else
                 R.drawable.ic_repeat
 
+            when (pos) {
+                0 -> {
+                    pendingIntentNext = createPendingIntent(context, ACTION_NEXT)
+                    iconNext = R.drawable.ic_skip_next
+                }
+                size -> {
+                    pendingIntentPrevious = createPendingIntent(context, ACTION_PREVIOUS)
+                    iconPrevious = R.drawable.ic_skip_prev
+                }
+                else -> {
+                    pendingIntentPrevious = createPendingIntent(context, ACTION_PREVIOUS)
+                    iconPrevious = R.drawable.ic_skip_prev
 
-            val intentRandom = Intent(
-                context,
-                NotificationActionService::class.java
-            )
-                .setAction(ACTION_RANDOM)
-            val pendingIntentRandom = PendingIntent.getBroadcast(
-                context,
-                0,
-                intentRandom,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            val iconRandom: Int = R.drawable.ic_random
-
-
-
+                    pendingIntentNext = createPendingIntent(context, ACTION_NEXT)
+                    iconNext = R.drawable.ic_skip_next
+                }
+            }
 
             notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_music_note)
@@ -181,6 +115,7 @@ class MusicNotification {
                 .setLargeIcon(icon)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
+                .setOngoing(true)
                 .addAction(iconPrevious, "Previous", pendingIntentPrevious)
                 .addAction(play_button, "Play", pendingIntentPlay)
                 .addAction(iconNext, "Next", pendingIntentNext)
