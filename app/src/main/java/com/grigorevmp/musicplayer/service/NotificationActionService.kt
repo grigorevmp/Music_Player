@@ -7,7 +7,7 @@ import android.content.Intent
 class NotificationActionService : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         context?.sendBroadcast(
-            Intent("Songs")
+            Intent("Songs action")
                 .putExtra(
                     "action_name",
                     intent?.action)

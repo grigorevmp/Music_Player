@@ -46,7 +46,7 @@ class MusicNotification {
             play_button: Int,
             pos: Int,
             size: Int,
-            songDuration: Int,
+            songDuration: Int = 0,
             looping: Boolean = false
         ) {
             val notificationManagerCompat = NotificationManagerCompat.from(context)
@@ -72,23 +72,30 @@ class MusicNotification {
 
 
             val icon = BitmapFactory.decodeResource(context.resources, song.image)
-            val pendingIntentPrevious: PendingIntent?
-            val pendingIntentNext: PendingIntent?
-            val iconPrevious: Int
-            val iconNext: Int
+
+            var pendingIntentPrevious: PendingIntent? = null
+            var pendingIntentNext: PendingIntent? = null
+
+            val pendingIntentPlay = createPendingIntent(context, ACTION_PLAY)
+            val pendingIntentRepeat = createPendingIntent(context, ACTION_REPEAT)
+            val pendingIntentRandom = createPendingIntent(context, ACTION_RANDOM)
+
+            var iconPrevious = 0
+            var iconNext = 0
+
+            val iconRandom = R.drawable.ic_random
+
+            val iconRepeat = if (looping)
+                R.drawable.ic_repeat_one
+            else
+                R.drawable.ic_repeat
 
             when (pos) {
                 0 -> {
-                    pendingIntentPrevious = null
-                    iconPrevious = 0
-
                     pendingIntentNext = createPendingIntent(context, ACTION_NEXT)
                     iconNext = R.drawable.ic_skip_next
                 }
                 size -> {
-                    iconNext = 0
-                    pendingIntentNext = null
-
                     pendingIntentPrevious = createPendingIntent(context, ACTION_PREVIOUS)
                     iconPrevious = R.drawable.ic_skip_prev
                 }
@@ -100,18 +107,6 @@ class MusicNotification {
                     iconNext = R.drawable.ic_skip_next
                 }
             }
-
-            val pendingIntentPlay = createPendingIntent(context, ACTION_PLAY)
-            val pendingIntentRepeat = createPendingIntent(context, ACTION_REPEAT)
-            val pendingIntentRandom = createPendingIntent(context, ACTION_RANDOM)
-
-            val iconRandom: Int = R.drawable.ic_random
-
-            val iconRepeat: Int = if (looping)
-                R.drawable.ic_repeat_one
-            else
-                R.drawable.ic_repeat
-
 
             notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_music_note)
