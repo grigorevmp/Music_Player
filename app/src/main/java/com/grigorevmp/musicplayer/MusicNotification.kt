@@ -5,14 +5,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.media.session.MediaSession
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-
-
+import com.grigorevmp.musicplayer.model.SongInfo
 
 
 class MusicNotification {
@@ -30,7 +28,7 @@ class MusicNotification {
 
         fun createNotification(
             context: Context,
-            song: Song,
+            song: SongInfo,
             play_button: Int,
             pos: Int,
             size: Int,
