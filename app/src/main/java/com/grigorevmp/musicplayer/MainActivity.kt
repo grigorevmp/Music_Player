@@ -13,6 +13,11 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlin.random.Random
+import android.support.v4.media.MediaMetadataCompat
+
+
+
 
 
 class MainActivity : AppCompatActivity(), Playable {
@@ -56,11 +61,21 @@ class MainActivity : AppCompatActivity(), Playable {
             }
         }
 
+        mediaPlayer.setOnCompletionListener {
+            if (position == songsNames.size - 1) {
+                position = 0
+                onTrackChange()
+            }
+            else if (position < songsNames.size - 1) {
+                position += 1
+                onTrackChange()
+            }
+        }
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel: NotificationChannel =
+            val channel =
                 NotificationChannel(
                     MusicNotification.CHANNEL_ID,
                     "Mini player",
@@ -72,7 +87,12 @@ class MainActivity : AppCompatActivity(), Playable {
         }
     }
 
-    private fun playSong(position: Int){
+    private fun playSong(position: Int, change: Boolean = false){
+        if(change){
+            mediaPlayer.stop()
+            mediaPlayer.reset()
+        }
+
         val descriptor: AssetFileDescriptor = this.assets.openFd(songsNames[position])
         mediaPlayer.setDataSource(
             descriptor.fileDescriptor,
@@ -86,6 +106,10 @@ class MainActivity : AppCompatActivity(), Playable {
         mediaPlayer.isLooping = false
     }
 
+    private fun changeSongLooping(){
+        mediaPlayer.isLooping = !mediaPlayer.isLooping
+    }
+
     private fun loadSongs() {
         songs.add(Song("Song 1", "Artist 1", R.drawable.cover_1))
         songs.add(Song("Song 2", "Artist 2", R.drawable.cover_2))
@@ -93,16 +117,9 @@ class MainActivity : AppCompatActivity(), Playable {
         songs.add(Song("Song 4", "Artist 4", R.drawable.cover_4))
     }
 
-
-    private fun toast(str: String) {
-        Toast.makeText(this, str, Toast.LENGTH_SHORT).show()
-    }
-
-
     private val broadCastReceiver = object : BroadcastReceiver() {
         override fun onReceive(contxt: Context?, intent: Intent?) {
-            val action = intent?.extras?.getString("actionname")
-            when (action) {
+            when (intent?.extras?.getString("action_name")) {
                 MusicNotification.ACTION_PREVIOUS -> onTrackPrevious()
                 MusicNotification.ACTION_PLAY -> {
                     if (isPlaying)
@@ -112,69 +129,113 @@ class MainActivity : AppCompatActivity(), Playable {
                 }
                 MusicNotification.ACTION_NEXT -> onTrackNext()
                 MusicNotification.ACTION_REPEAT -> onTrackRepeat()
+                MusicNotification.ACTION_RANDOM -> onTrackRandom()
             }
         }
     }
 
-
     override fun onTrackPrevious() {
         position -= 1
+        playSong(position, change = true)
+        mediaPlayer.start()
+
         MusicNotification.createNotification(
             this,
             songs[position],
             R.drawable.ic_pause,
-            0,
-            songs.size - 1
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
         )
-        mediaPlayer.stop()
-        mediaPlayer.reset()
-        playSong(position)
-        mediaPlayer.start()
     }
 
     override fun onTrackPlay() {
+        isPlaying = true
+        controlMusic.setImageResource(R.drawable.ic_pause)
+        mediaPlayer.start()
+
         MusicNotification.createNotification(
             this,
             songs[position],
             R.drawable.ic_pause,
-            0,
-            songs.size - 1
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
         )
-        isPlaying = true
-        controlMusic.setImageResource(R.drawable.ic_pause)
-        mediaPlayer.start()
     }
 
+    override fun onTrackChange() {
+        playSong(position, change = true)
+        mediaPlayer.start()
+
+        MusicNotification.createNotification(
+            this,
+            songs[position],
+            R.drawable.ic_pause,
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
+        )
+    }
+
+
     override fun onTrackPause() {
+        isPlaying = false
+        controlMusic.setImageResource(R.drawable.ic_play)
+        mediaPlayer.pause()
+
         MusicNotification.createNotification(
             this,
             songs[position],
             R.drawable.ic_play,
-            0,
-            songs.size - 1
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
         )
-        isPlaying = false
-        controlMusic.setImageResource(R.drawable.ic_play)
-        mediaPlayer.pause()
+    }
+
+    override fun onTrackRandom() {
+        playSong(position, change = true)
+        mediaPlayer.start()
+
+        val randomPosition = Random.nextInt(songs.size - 1)
+        position = randomPosition
+        MusicNotification.createNotification(
+            this,
+            songs[position],
+            R.drawable.ic_pause,
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
+        )
     }
 
     override fun onTrackNext() {
+        playSong(position, change = true)
+        mediaPlayer.start()
+
         position += 1
         MusicNotification.createNotification(
             this,
             songs[position],
             R.drawable.ic_pause,
-            0,
-            songs.size - 1
+            position,
+            songs.size - 1,
+            mediaPlayer.duration
         )
-        mediaPlayer.stop()
-        mediaPlayer.reset()
-        playSong(position)
-        mediaPlayer.start()
     }
 
     override fun onTrackRepeat() {
-        TODO("Not yet implemented")
+        changeSongLooping()
+        MusicNotification.createNotification(
+            this,
+            songs[position],
+            R.drawable.ic_pause,
+            position,
+            songs.size - 1,
+            mediaPlayer.duration,
+            looping = mediaPlayer.isLooping
+        )
     }
 
     override fun onDestroy() {

@@ -9,7 +9,7 @@ class NotificationActionService : BroadcastReceiver() {
         context?.sendBroadcast(
             Intent("Songs")
                 .putExtra(
-                    "actionname",
+                    "action_name",
                     intent?.action)
         )
     }
