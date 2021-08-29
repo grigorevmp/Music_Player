@@ -1,4 +1,4 @@
-package com.grigorevmp.musicplayer
+package com.grigorevmp.musicplayer.service
 
 import android.content.BroadcastReceiver
 import android.content.Context

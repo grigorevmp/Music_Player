@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".NotificationActionService"
+        <receiver android:name=".service.NotificationActionService"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
@@ -31,7 +31,7 @@
             </intent-filter>
         </receiver>
         <service
-            android:name=".OnClearFromRecentService"
+            android:name=".service.OnClearFromRecentService"
             android:enabled="true"
             android:exported="false"/>
 

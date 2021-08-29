@@ -6,14 +6,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.AssetFileDescriptor
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.grigorevmp.musicplayer.MusicNotification
-import com.grigorevmp.musicplayer.OnClearFromRecentService
+import com.grigorevmp.musicplayer.service.OnClearFromRecentService
 import com.grigorevmp.musicplayer.Playable
 import com.grigorevmp.musicplayer.R
 import com.grigorevmp.musicplayer.model.SongInfo

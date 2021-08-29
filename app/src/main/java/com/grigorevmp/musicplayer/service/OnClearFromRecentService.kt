@@ -1,4 +1,4 @@
-package com.grigorevmp.musicplayer
+package com.grigorevmp.musicplayer.service
 
 import android.app.Service
 import android.content.Intent
